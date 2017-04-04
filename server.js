@@ -1,9 +1,13 @@
-// https://zellwk.com/blog/crud-express-mongodb/
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const MongoClient = require('mongodb').MongoClient;
 var dotenv = require('dotenv').config();
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
+app.use(bodyParser.json());
+app.set('view engine', 'ejs');
 
 var db;
 
@@ -15,10 +19,6 @@ MongoClient.connect('mongodb://' + process.env.DB_USER + ':' + process.env.DB_PA
   });
 });
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
-
-
 
 app.get('/', (req, res) => {
   db.collection('quotes').find().toArray((err, results) => {
@@ -27,11 +27,6 @@ app.get('/', (req, res) => {
     // renders index.ejs
     res.render('index.ejs', {quotes: results});
   })
-
-  //res.sendFile(__dirname + '/index.html');
-  // note __dirname is the directory that contains the JavaScript source code
-
-  //res.send('hello world');
 })
 
 app.post('/quotes', (req, res) => {
@@ -41,4 +36,19 @@ app.post('/quotes', (req, res) => {
     console.log('saved to database');
     res.redirect('/');
   });
+});
+
+app.put('/quotes', (req, res) => {
+  db.collection('quotes').findOneAndUpdate({ name: 'Yoda' }, {
+      $set: {
+        name: req.body.name,
+        quote: req.body.quote
+      }
+    }, {
+      sort: {_id: -1},
+      upsert: true
+    }, (err, result) => {
+      if (err) return res.send(err);
+      res.send(result);
+    });
 });
